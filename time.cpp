@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -13,9 +14,11 @@
         std::cout << e << f << std::endl; \
     };
 
-double getTimeOfDay(){
-    time_t now = time(0);
-    return now;
+long int getTimeOfDay(){
+    struct timeval current;
+    gettimeofday(&current, NULL);
+    print("micro time: ", current.tv_usec);
+    return current.tv_usec;
 }
 
 void executeCmd(std::string s)
@@ -41,52 +44,68 @@ int main(int argc, char *argv[])
     // print("cmd_char is: ", cmd_char);
 
     
-    int pipes[2];
+    int pipe1[2], pipe2[2];
     pid_t pid;
     char cmdOutput[4096];
-    float pStart, cStart, pEnd;
 
     //create a pipe
-    if (pipe(pipes) == -1)
+    if (pipe(pipe1) == -1 || pipe(pipe2) == -1)
     {
         printf("pipe had failed\n");
         return EXIT_FAILURE;
     }
 
+    print("pid start value ", getpid());
+
     //fork a child
-    if ((pid = fork()) == -1)
-    {
-        print("fork had failed", "")
+    if((pid = fork()) < 0){
+        perror("fork failed");
+        return EXIT_FAILURE;
     }
 
-    //check for child/parent process. Read on 0 and print on else
-    if (pid == 0)
-    {
-        print("child process was created ", getppid());
-        cStart = getTimeOfDay();
-        dup2(pipes[1], STDOUT_FILENO);
-        close(pipes[0]);
-        close(pipes[1]);
-        execl(cmd_char, "", (char *) 0);
-    }
-    else if(pid < 0){
-        print("child process was killed", getppid());
-    }
-    else
-    {
-        print("parent process ", getpid());
-        pStart = getTimeOfDay();
-        close(pipes[1]);
-        int bytes = read(pipes[0], cmdOutput, sizeof(cmdOutput));
-        printf("outputs are --> (%.*s)\n", bytes, cmdOutput);
-        wait(0);
-        pEnd = getTimeOfDay();
+    print("current pid value ", pid);
+
+    //excute code in the child process, dup2 duplciates file descriptor
+    if (pid == 0){
+        print("in child process ", getpid());
+        
+        //run execl() command and get the outputs
+        int cStart = getTimeOfDay();
+        dup2(pipe1[1], STDOUT_FILENO);
+        close(pipe1[0]);
+        close(pipe1[1]);
+        execl(cmd_char, "", (char *)0);
+
+        printf("exiting child\n");
+        exit(0);
     }
 
-    print("child started: ", cStart);
-    print("parent started: ", pStart);
-    print("parent stopped: ", pEnd);
-    print("elapsed time: ", pEnd - pStart);
+    //write timestamp to write end of pipe
+    int pStart = getTimeOfDay();
+    close(pipe2[0]); //close read end
+    write(pipe2[1], &pStart, sizeof(pStart));
+    close(pipe2[1]);
+
+    //parent will now wait for child to complete
+    print("in parent process, waiting for child to end ", "");
+    wait(NULL);
+
+    int bytes = read(pipe1[0], cmdOutput, sizeof(cmdOutput));
+    printf("command outputs are : \n%.*s", bytes, cmdOutput);
+    wait(NULL);
+
+    //retrieve the passed value from the pipe and read it
+    int passedVal;
+    close(pipe2[1]);
+    read(pipe2[0], &passedVal, sizeof(passedVal));
+    close(pipe2[0]);
+    print("passed time --->> ", passedVal);
+
+    //parent process is complete
+    printf("ended parent\n");
+
+    int endTime = getTimeOfDay();
+    print("elapsed time: ", (double)(endTime - passedVal) / 1000000);
 
     return 0;
 }
