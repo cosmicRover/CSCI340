@@ -2,9 +2,7 @@
 
 ### instructions to run.
 cd into project1 directory
-run: 
-    g++ time.cpp
-    ./a.out <your_command>
+run: g++ time.cpp then, ./a.out <your_command>
 
 ## Challenges:
 
