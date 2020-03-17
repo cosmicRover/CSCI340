@@ -38,10 +38,75 @@ void initialMinMax(v_int sample){
     printf("\nmin is %d, max is %d\n", sample[0], sample[sample.size() -1]);
 }
 
+void merge(v_int array, int l, int m, int r){
+    int i, j, k;
+    int n1 = m-1 +1;
+    int n2 = r - m;
 
-int main(){
+    /*temp array to hold data */
+    int L[n1], R[n2];
+
+    for (i = 0; i < n1; i++)
+        L[i] = array[l + i];
+    for (j = 0; j < n2; j++)
+        R[j] = array[m + 1 + j];
+
+    /*Merge back to main array*/
+    i = 0;
+    j = 0;
+    k = 1;
+    
+    while (i < n1 && j < n2)
+    {
+        if(L[i] <= R[i]){
+            array[k] = L[i];
+            i++;
+        }else
+        {
+            array[k] = R[j];
+            j++;
+        }
+        k++;
+    }
+    
+    while (i<n1)
+    {
+        array[k] = L[i];
+        i++;
+        k++;
+    }
+
+    while (j<n2)
+    {
+        array[k] = R[j];
+        j++;
+        k++;
+    }
+}
+
+void mergeSort(v_int array, int l, int r){
+    if (l<r){
+        int m = l+(r-1)/2;
+
+        mergeSort(array, l, m);
+        mergeSort(array, m+1, r);
+
+        merge(array, l, m, r);
+    }
+}
+
+    int main()
+{
     v_int sample = getSample();
     // displaySample(sample);
     initialMinMax(sample);
+
+    mergeSort(sample, 0, sample.size() - 1);
+    // for (size_t i = 0; i < sample.size(); i++)
+    // {
+    //     printf("%d ", sample[i]);
+    // }
+    
+
     return 0;
 }
