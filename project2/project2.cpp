@@ -3,6 +3,7 @@
 #include <ctime>
 #include <vector>
 #include <algorithm>
+#include <thread>
 /*
 specs:
 1) generate 10k random numbers from 1-10,000 [x]
@@ -12,6 +13,7 @@ specs:
 */
 
 #define v_int std::vector<int> //macro for int vector declaration
+// #define thread std::thread //macro for thread declaration
 
 void displaySample(v_int sample)
 {
@@ -24,7 +26,7 @@ void displaySample(v_int sample)
 /*get random numbers up to a million*/
 v_int getSample()
 {
-    int SIZE = 100;
+    int SIZE = 10000;
     v_int sample;
     srand((unsigned)time(0));
 
@@ -57,6 +59,11 @@ int getMin(v_int arr)
     return min;
 }
 
+void threadFn(v_int arr){
+    int min = getMin(arr);
+    printf("min from thread is: %d\n", min);
+}
+
 int main()
 {
     v_int sample = getSample();
@@ -64,7 +71,12 @@ int main()
     initialMinMax(sample);
     int nonMtMin = getMin(sample);
     printf("Min from nonMt is: %d\n", nonMtMin);
-    /*TODO get min the MT way*/
+
+    /*the MT way */
+    //TODO: create multiple threads with sub samples
+    std::thread t1 (threadFn, sample);
+    t1.join();
+    
 
     return 0;
 }
