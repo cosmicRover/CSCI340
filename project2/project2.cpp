@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <thread>
+#include <string>
 /*
 specs:
 1) generate 10k random numbers from 1-10,000 [x]
@@ -13,7 +14,11 @@ specs:
 */
 
 #define v_int std::vector<int> //macro for int vector declaration
-// #define thread std::thread //macro for thread declaration
+// #define thread std::thread     //macro for posix thread declaration, the C++ 11 way
+
+/*global vector to store minimums*/
+v_int mins;
+
 
 void displaySample(v_int sample)
 {
@@ -59,9 +64,64 @@ int getMin(v_int arr)
     return min;
 }
 
-void threadFn(v_int arr){
+v_int subDivideArray(v_int original, int beignIndex, int endIndex)
+{
+    v_int subSample;
+
+    for (int i = beignIndex; i < endIndex; i++)
+    {
+        subSample.push_back(original[i]);
+    }
+    return subSample;
+}
+
+
+void threadGetMinFn(v_int arr){
     int min = getMin(arr);
-    printf("min from thread is: %d\n", min);
+    printf("min from thread is --> %d\n", min);
+}
+
+
+void threadSubDivFn(v_int arr)
+{
+    int subSample[20][100];
+    std::thread threads2[20];
+
+    for (int i = 0; i < 20; i++)
+    {
+        v_int val = subDivideArray(arr, i, i + 100);
+        for (int j = 0; j < val.size(); j++)
+        {
+            subSample[i][j] = val[j];
+        }
+    }
+
+    // multiple threads to get minimum from sub threads
+    for (int i = 0; i < 20; i++)
+    {
+        v_int val;
+        for (int j = 0; j < 100; j++)
+        {
+            val.push_back(subSample[i][j]);
+        }
+        // threads2[i] = std::thread(threadGetMinFn, val);
+        // printf("%d\n", int(val.size()));
+        int min = 2147483647;
+        for (int i = 0; i < val.size(); i++)
+        {
+            printf("%d ", val[i]);
+        }
+        printf("\n");
+
+        // printf("%d\n", min);   
+    }
+
+    for (int i = 0; i < 20; i++)
+    {
+        if(threads2[i].joinable()){
+            threads2[i].join();
+        }
+    }
 }
 
 int main()
@@ -73,9 +133,43 @@ int main()
     printf("Min from nonMt is: %d\n", nonMtMin);
 
     /*the MT way */
-    //TODO: create multiple threads with sub samples
-    std::thread t1 (threadFn, sample);
-    t1.join();
+    /*divide sample up in 5 ways*/
+    int subSample[5][2000];
+    std::thread threads[5];
+
+    for (int i = 0; i < 5; i++)
+    {
+        v_int val = subDivideArray(sample, i, i+2000); 
+        for (int j = 0; j < val.size(); j++)
+        {
+            subSample[i][j] = val[i];
+        }
+        
+    }
+
+    // multiple threads to get minimum from sub threads
+    for (int i = 0; i < 5; i++)
+    {   
+        v_int val;
+        for (int j = 0; j < 2000; j++)
+        {
+            val.push_back(subSample[i][j]);
+        }
+        threads[i] = std::thread(threadSubDivFn, val);
+        // printf("%d\n", int(val.size()));
+    }
+
+    for (int i = 0; i < 5; i++)
+    {
+        if(threads[i].joinable()){
+            threads[i].join();
+        }
+    }
+
+    // for (int i = 0; i < mins.size(); i++)
+    // {
+    //     printf("%d\n", mins[i]);
+    // }
     
 
     return 0;
