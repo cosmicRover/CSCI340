@@ -14,7 +14,7 @@ specs:
 */
 
 #define v_int std::vector<int> //macro for int vector declaration
-// #define thread std::thread     //macro for posix thread declaration, the C++ 11 way
+#define thread std::thread     //macro for posix thread declaration, the C++ 11 way
 
 /*global vector to store minimums*/
 v_int mins;
@@ -37,7 +37,7 @@ v_int getSample()
 
     for (size_t i = 0; i < SIZE; i++)
     {
-        sample.push_back(rand() % 100000);
+        sample.push_back(rand() % 10000);
     }
 
     return sample;
@@ -60,8 +60,12 @@ int getMin(v_int arr)
             min = arr[i];
         }
     }
-
+    mins.push_back(min);
     return min;
+}
+
+void printMtMin(){
+    printf("minimum from Multithread is: %d \n", mins[0]);
 }
 
 v_int subDivideArray(v_int original, int beignIndex, int endIndex)
@@ -78,44 +82,36 @@ v_int subDivideArray(v_int original, int beignIndex, int endIndex)
 
 void threadGetMinFn(v_int arr){
     int min = getMin(arr);
-    printf("min from thread is --> %d\n", min);
 }
 
-
+/*divides the sample further vy 20*/
 void threadSubDivFn(v_int arr)
 {
     int subSample[20][100];
-    std::thread threads2[20];
+    thread threads2[20];
 
-    for (int i = 0; i < 20; i++)
-    {
-        v_int val = subDivideArray(arr, i, i + 100);
+    for (int i = 0; i < 2000; i += 100)
+    {   
+        v_int val = subDivideArray(arr, i, i + 100 - 1);
         for (int j = 0; j < val.size(); j++)
         {
-            subSample[i][j] = val[j];
+            subSample[int(i / 100)][j] = val[j];
         }
     }
 
-    // multiple threads to get minimum from sub threads
+    /*spawns 20 additional threads*/
     for (int i = 0; i < 20; i++)
     {
         v_int val;
         for (int j = 0; j < 100; j++)
         {
-            val.push_back(subSample[i][j]);
+            int x = subSample[i][j];
+            val.push_back(x);
         }
-        // threads2[i] = std::thread(threadGetMinFn, val);
-        // printf("%d\n", int(val.size()));
-        int min = 2147483647;
-        for (int i = 0; i < val.size(); i++)
-        {
-            printf("%d ", val[i]);
-        }
-        printf("\n");
-
-        // printf("%d\n", min);   
+        threads2[i] = thread(threadGetMinFn, val);  
     }
 
+    /*joins threads threads*/
     for (int i = 0; i < 20; i++)
     {
         if(threads2[i].joinable()){
@@ -125,29 +121,32 @@ void threadSubDivFn(v_int arr)
 }
 
 int main()
-{
+{   
+    /*gets the random 10k smaples*/
+    printf("Generating 10k samples\n");
     v_int sample = getSample();
-    // displaySample(sample);
     initialMinMax(sample);
     int nonMtMin = getMin(sample);
-    printf("Min from nonMt is: %d\n", nonMtMin);
+    printf("Min from NON multi-thread is: %d\n", nonMtMin);
 
     /*the MT way */
     /*divide sample up in 5 ways*/
     int subSample[5][2000];
-    std::thread threads[5];
+    thread threads[5];
 
-    for (int i = 0; i < 5; i++)
-    {
-        v_int val = subDivideArray(sample, i, i+2000); 
+    for (int i = 0; i < 10000; i+=2000)
+    {   
+        // printf("%d increased: %d\n", i, i+2000-1);
+        v_int val = subDivideArray(sample, i, i+2000-1);
         for (int j = 0; j < val.size(); j++)
         {
-            subSample[i][j] = val[i];
+            subSample[int(i / 2000)][j] = val[j];
         }
-        
+         
     }
 
-    // multiple threads to get minimum from sub threads
+    /* multiple threads to get minimum from sub threads*/
+    // printf("spawning threads. 5 threads, then 20 threads as children of each\n");
     for (int i = 0; i < 5; i++)
     {   
         v_int val;
@@ -155,10 +154,12 @@ int main()
         {
             val.push_back(subSample[i][j]);
         }
-        threads[i] = std::thread(threadSubDivFn, val);
+        threads[i] = thread(threadSubDivFn, val);
         // printf("%d\n", int(val.size()));
     }
 
+    /*joining the threads */
+    // printf("joining the threads one at a time\n");
     for (int i = 0; i < 5; i++)
     {
         if(threads[i].joinable()){
@@ -166,11 +167,8 @@ int main()
         }
     }
 
-    // for (int i = 0; i < mins.size(); i++)
-    // {
-    //     printf("%d\n", mins[i]);
-    // }
-    
+    thread finalThread(printMtMin);
+    finalThread.join();
 
     return 0;
 }
