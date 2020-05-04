@@ -3,10 +3,12 @@
 #include <string>
 #include <vector>
 
+//The DS for this program
 int vals[6][4];
 int waitTimes[6];
 int turnAroundTimes[6];
 
+//reads processes.tsv and append to vals
 void readFile()
 {
     std::ifstream file("processes.tsv");
@@ -39,6 +41,7 @@ void readFile()
     }
 }
 
+//execute Red Robin algorithm.
 void calculateWaitTime()
 {
 
